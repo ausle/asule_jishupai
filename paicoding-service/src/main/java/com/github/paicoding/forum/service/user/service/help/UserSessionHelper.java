@@ -173,13 +173,19 @@ public class UserSessionHelper {
 
         // 先获取 userId 以便从索引中移除
         String userId = RedisClient.getStr(session);
+        // 缓存中获取会话设备信息，里面存的是，token。
         SessionDeviceMeta meta = getSessionMeta(session);
+        // 缓存中有，代表什么？代表已经登录过。
+        // 从维护用户session的SET，删掉对应token。
         if (userId != null) {
             String userSessionKey = userSessionKey(Long.valueOf(userId));
             redisTemplate.opsForSet().remove(userSessionKey, session);
         }
+        // 删除token到ID的映射。
         RedisClient.del(session);
+        // 删除当前会话的设备信息。
         RedisClient.del(sessionMetaKey(session));
+        // 该SET中保存着该用户，登录了哪些设备。此时删除掉当前jwt。
         RedisClient.del(sessionTouchKey(session));
 
         if (meta == null && userId != null) {
@@ -309,6 +315,7 @@ public class UserSessionHelper {
             if (user == null || !Objects.equals(userId, user)) {
                 return null;
             }
+            // 用户如果被禁用
             if (isUserForbidden(Long.valueOf(userId))) {
                 removeSession(session, ACCOUNT_SUSPENDED_REASON);
                 return null;
@@ -333,22 +340,27 @@ public class UserSessionHelper {
             return null;
         }
 
+        // 查询该用户保存的登录token，如果不为空，代表该用户在其他设备上正登录着。
+        // 如果为空，代表该用户当前没有已登录的会话记录。
         Set<String> sessions = redisTemplate.opsForSet().members(userSessionKey(userId));
         if (sessions == null || sessions.isEmpty()) {
             return "NEW_DEVICE";
         }
 
+        // 设备标识 → 该设备对应的 Token 列表
         Map<String, List<String>> deviceSessions = new HashMap<>();
+        // 设备标识 → 该设备最早的登录时间
         Map<String, Long> deviceLoginTime = new HashMap<>();
+        // 保存已经失效、异常或不完整的旧 Token
         List<String> staleSessions = new ArrayList<>();
         for (String session : sessions) {
             SessionDeviceMeta meta = getSessionMeta(session);
             String bindUserId = RedisClient.getStr(session);
+            // 上一个会话已失效
             if (meta == null || bindUserId == null || !Objects.equals(String.valueOf(userId), bindUserId)) {
                 staleSessions.add(session);
                 continue;
             }
-
             String existDeviceId = normalizeDeviceId(meta.getDeviceId(), meta.getUaHash(), session);
             deviceSessions.computeIfAbsent(existDeviceId, key -> new ArrayList<>()).add(session);
             deviceLoginTime.merge(existDeviceId, Optional.ofNullable(meta.getLoginTime()).orElse(Long.MAX_VALUE), Math::min);
@@ -366,6 +378,8 @@ public class UserSessionHelper {
             return "NEW_DEVICE";
         }
 
+        // 当前是新设备，并且现有设备数量已经达到上限。
+        // 找出最早登录的那个设备。
         String oldestDeviceId = deviceLoginTime.entrySet().stream()
                 .min(Map.Entry.comparingByValue())
                 .map(Map.Entry::getKey)
@@ -381,6 +395,7 @@ public class UserSessionHelper {
     }
 
     private void refreshSessionMeta(String session, Long userId, String clientIp, String deviceId, String userAgent) {
+        // 从缓存中拿到当前会话的设备元数据，更新设备元数据中的值。
         SessionDeviceMeta meta = Optional.ofNullable(getSessionMeta(session))
                 .orElseGet(() -> buildSessionMeta(userId, null, null, System.currentTimeMillis(), System.currentTimeMillis() + jwtProperties.getExpire()));
 
@@ -399,6 +414,7 @@ public class UserSessionHelper {
         }
         meta.setLatestSeenTime(System.currentTimeMillis());
 
+        // 让 Session 元数据和 Token 同时过期
         Long ttl = RedisClient.ttl(session);
         if (ttl != null && ttl > 0) {
             RedisClient.setStrWithExpire(sessionMetaKey(session), JsonUtil.toStr(meta), ttl);
@@ -406,6 +422,8 @@ public class UserSessionHelper {
             RedisClient.setStr(sessionMetaKey(session), JsonUtil.toStr(meta));
         }
 
+        // 如果用户频繁访问页面，为了不频繁每次都更新数据库，这里使用了限流标记。
+        // 首次设置，KEY不存在，设置过期时间是5分钟。5分钟内，有请求过来，不更新数据库。5分钟后，KEY已过期，再次更新数据库。
         if (Boolean.TRUE.equals(RedisClient.setStrIfAbsentWithExpire(sessionTouchKey(session), "1",
                 Optional.ofNullable(loginRiskProperties.getTouchSyncSeconds()).orElse(300).longValue()))) {
             loginAuditService.touchActiveSession(buildSessionHash(session), meta);

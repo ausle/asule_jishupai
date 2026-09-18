@@ -59,7 +59,7 @@ security:
 paicoding:
   login:
     risk:
-      maxActiveDevices: 2
+      maxActiveDevices: 1
       touchSyncSeconds: 300
   sensitive: # 敏感词校验相关配置
     enable: true

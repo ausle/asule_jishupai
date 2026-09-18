@@ -101,6 +101,8 @@ public class UserActivityRankServiceImpl implements UserActivityRankService {
         // 2. 幂等：判断之前是否有更新过相关的活跃度信息。activity_rank_120260917
         final String userActionKey = ACTIVITY_SCORE_KEY + userId + DateUtil.format(DateTimeFormatter.ofPattern("yyyyMMdd"), System.currentTimeMillis());
         Integer ans = RedisClient.hGet(userActionKey, field, Integer.class);
+
+        // 为NULL，代表，从未进行
         if (ans == null) {
             // 2.1 之前没有加分记录，执行具体的加分
             if (score > 0) {
@@ -134,7 +136,9 @@ public class UserActivityRankServiceImpl implements UserActivityRankService {
                     }
                 }
             }
-        } else if (ans > 0) {
+        }
+        //
+        else if (ans > 0) {
             // 2.2 之前已经加过分，因此这次减分可以执行
             if (score < 0) {
                 // 移除用户的活跃执行记录 --> 即移除用来做防重复添加活跃度的幂等键

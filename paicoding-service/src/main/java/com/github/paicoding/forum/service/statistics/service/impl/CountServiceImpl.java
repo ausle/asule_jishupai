@@ -126,6 +126,7 @@ public class CountServiceImpl implements CountService {
      * 每天4:15分执行定时任务，全量刷新用户的统计信息
      */
     @Scheduled(cron = "0 15 4 * * ?")
+//    @Scheduled(cron = "0 */5 * * * ?")
     public void autoRefreshAllUserStatisticInfo() {
         Long now = System.currentTimeMillis();
         log.info("开始自动刷新用户统计信息");
@@ -147,15 +148,13 @@ public class CountServiceImpl implements CountService {
     /**
      * 每5分钟执行一次，将 Redis 中的文章阅读计数同步到数据库
      */
-    @Scheduled(cron = "0 */5 * * * ?")
+    @Scheduled(cron = "0 15 4 * * ?")
     public void syncArticleReadCountToDb() {
         Long start = System.currentTimeMillis();
         log.info("开始同步文章阅读计数到数据库");
-
         try {
             // 扫描所有文章统计 key
             Set<String> keys = scanKeys(CountConstants.ARTICLE_STATISTIC_INFO + "*");
-
             int synced = 0;
             for (String key : keys) {
                 try {

@@ -1,6 +1,6 @@
 spring:
   datasource: #单数据源
-    url: jdbc:mysql://192.168.52.200:3306/pai_coding?useUnicode=true&allowPublicKeyRetrieval=true&autoReconnect=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://192.168.52.200:3306/xiren_coding?useUnicode=true&allowPublicKeyRetrieval=true&autoReconnect=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai
     # fixme 注意：本地启动时，数据库用户名 + 密码，更新这里的配置
     username: root
     password: ${PAICODING_DB_PASSWORD}

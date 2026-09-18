@@ -116,11 +116,23 @@ public class GlobalInitService {
             return;
         }
 
+        /*
+            1、什么时候拿不到cookie信息？
+               （1）浏览器没有携带任何 Cookie，可能是：
+                    - 首次访问，从未登录过。
+                    - 浏览器清空了cookie
+                    - cookie过期了。
+        */
         List<Cookie> list = SessionUtil.findCookiesByName(request, LoginService.SESSION_KEY);
         if (CollectionUtils.isEmpty(list)) {
             return;
         }
         for (Cookie ck : list) {
+            /*
+                 initLoginUser返回false，会手动删除掉cookie。
+                 什么时候会删掉cookie:
+                    1、redis中找不到该token对应的用户ID。
+            */
             if (initLoginUser(ck.getValue(), reqInfo)) {
                 // 成功登录
                 return;
@@ -132,8 +144,10 @@ public class GlobalInitService {
     }
 
     public boolean initLoginUser(String session, ReqInfoContext.ReqInfo reqInfo) {
+        // 获取登录用户信息。
         BaseUserInfoDTO user = userService.getAndUpdateUserIpInfoBySessionId(session, reqInfo.getClientIp(), reqInfo.getDeviceId(), reqInfo.getUserAgent());
         if (user != null) {
+            // 用户登录有效，会把uid设置到reqInfo中，后续会前端会通过该uid判断，用户是否登录。
             reqInfo.setSession(session);
             reqInfo.setUserId(user.getUserId());
             reqInfo.setUser(user);
