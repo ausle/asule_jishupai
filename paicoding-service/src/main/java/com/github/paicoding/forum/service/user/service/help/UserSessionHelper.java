@@ -341,7 +341,7 @@ public class UserSessionHelper {
         }
 
         // 查询该用户保存的登录token，如果不为空，代表该用户在其他设备上正登录着。
-        // 如果为空，代表该用户当前没有已登录的会话记录。
+        // 如果为空，代表该用户当前没有已登录的记录，或者已经退出登录了，或者到了过期时间。
         Set<String> sessions = redisTemplate.opsForSet().members(userSessionKey(userId));
         if (sessions == null || sessions.isEmpty()) {
             return "NEW_DEVICE";
@@ -381,7 +381,7 @@ public class UserSessionHelper {
         // 当前是新设备，并且现有设备数量已经达到上限。
         // 找出最早登录的那个设备。
         String oldestDeviceId = deviceLoginTime.entrySet().stream()
-                .min(Map.Entry.comparingByValue())
+                .min(Map.Entry.comparingByValue())      // 找出里面最小的
                 .map(Map.Entry::getKey)
                 .orElse(null);
         if (oldestDeviceId == null) {
@@ -445,7 +445,7 @@ public class UserSessionHelper {
             return meta;
         }
 
-        meta.setDeviceId(reqInfo.getDeviceId());
+        meta.setDeviceId(reqInfo.getDeviceId());  // 设备ID
         meta.setUserAgent(reqInfo.getUserAgent());
         meta.setUaHash(StringUtils.isBlank(reqInfo.getUserAgent()) ? null : Md5Util.encode(reqInfo.getUserAgent()));
         meta.setDeviceName(buildDeviceName(reqInfo.getUserAgent()));

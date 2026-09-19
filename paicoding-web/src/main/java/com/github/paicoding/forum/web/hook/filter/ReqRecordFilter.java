@@ -239,11 +239,14 @@ public class ReqRecordFilter implements Filter {
         if (StringUtils.isNotBlank(deviceId) && !"null".equalsIgnoreCase(deviceId)) {
             return deviceId;
         }
-
         Cookie device = SessionUtil.findCookieByName(request, LoginService.USER_DEVICE_KEY);
         if (device == null) {
             deviceId = UUID.randomUUID().toString();
             if (response != null) {
+                // device这个cookie的有效期是5天。
+                // 该cookie的PATH是"/"，默认所有的请求都会携带。
+                // 退出登录不会清掉这个COOKIE。
+                // 也就是说只能等待其自动失效。
                 response.addCookie(SessionUtil.newCookie(LoginService.USER_DEVICE_KEY, deviceId));
             }
             return deviceId;

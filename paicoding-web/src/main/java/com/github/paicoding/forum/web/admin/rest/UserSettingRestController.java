@@ -83,6 +83,8 @@ public class UserSettingRestController {
         return ResVo.ok(loginAuditService.getShareRiskPage(req));
     }
 
+
+    // 实现踢人下线
     @ApiOperation("禁用用户")
     @PostMapping(path = "forbid")
     public ResVo<String> forbid(@RequestBody UserForbidReq req) {
