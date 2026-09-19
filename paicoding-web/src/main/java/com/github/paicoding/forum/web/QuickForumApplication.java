@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.paicoding.forum.core.autoconf.DynamicConfigContainer;
 import com.github.paicoding.forum.core.util.DotenvUtil;
-import com.github.paicoding.forum.core.util.SocketUtil;
 import com.github.paicoding.forum.web.config.GlobalViewConfig;
 import com.github.paicoding.forum.web.global.ForumExceptionHandler;
 import com.github.paicoding.forum.web.hook.interceptor.GlobalViewInterceptor;
@@ -86,20 +85,15 @@ public class QuickForumApplication implements WebMvcConfigurer, ApplicationRunne
     }
 
     /**
-     * 兼容本地启动时8080端口被占用的场景; 只有dev启动方式才做这个逻辑
+     * 开发环境固定使用 application.yml 中配置的端口。
+     * 如果端口被占用，直接启动失败，避免前端代理端口与后端实际端口不一致。
      *
-     * @return
+     * @return Tomcat connector customizer
      */
     @Bean
     @ConditionalOnExpression(value = "#{'dev'.equals(environment.getProperty('env.name'))}")
     public TomcatConnectorCustomizer customServerPortTomcatConnectorCustomizer() {
-        // 开发环境时，首先判断8080d端口是否可用；若可用则直接使用，否则选择一个可用的端口号启动
-        int port = SocketUtil.findAvailableTcpPort(8000, 10000, webPort);
-        if (port != webPort) {
-            log.info("默认端口号{}被占用，随机启用新端口号: {}", webPort, port);
-            webPort = port;
-        }
-        return connector -> connector.setPort(port);
+        return connector -> connector.setPort(webPort);
     }
 
     @PostConstruct

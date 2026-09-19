@@ -286,20 +286,27 @@ public class SitemapServiceImpl implements SitemapService {
      */
     @Override
     public void saveVisitInfo(String visitIp, String path) {
+        // visit_info
+        // 站点的访问统计，维度是整个站点。
+        // 统计的信息包括有：站点的总PV、UV。站点某个资源的总的PV和UV。
         String globalKey = SitemapConstants.SITE_VISIT_KEY;
+
+        // visit_info_today
+        // 当天的站点统计，维度是当天
+        // 统计的信息包括有：日访问的总PV，UV，日站点某个资源的总的PV和UV。用户当天访问的PV，以及用户访问某个资源的PV
         String day = SitemapConstants.day(LocalDate.now());
-
         String todayKey = globalKey + "_" + day;
-
-        // 用户的全局访问计数+1
-        Long globalUserVisitCnt = RedisClient.hIncr(globalKey + "_" + visitIp, "pv", 1);
-        // 用户的当日访问计数+1
         Long todayUserVisitCnt = RedisClient.hIncr(todayKey, "pv_" + visitIp, 1);
+
+
+        // visit_info_visitIp
+        // 用户访问的统计，维度是这个用户
+        // 统计的信息包括有：这个用户访问站点的总PV，以及某个资源的总PV
+        Long globalUserVisitCnt = RedisClient.hIncr(globalKey + "_" + visitIp, "pv", 1);
 
         RedisClient.PipelineAction pipelineAction = RedisClient.pipelineAction();
         if (globalUserVisitCnt == 1) {
-            // 站点新用户
-            // 今日的uv + 1
+            // 某个用户首次访问
             pipelineAction.add(todayKey, "uv"
                     , (connection, key, field) -> {
                         connection.hIncrBy(key, field, 1);
@@ -307,10 +314,12 @@ public class SitemapServiceImpl implements SitemapService {
             pipelineAction.add(todayKey, "uv_" + path
                     , (connection, key, field) -> connection.hIncrBy(key, field, 1));
 
-            // 全局站点的uv
+            // 全局站点的uv+1
             pipelineAction.add(globalKey, "uv", (connection, key, field) -> connection.hIncrBy(key, field, 1));
             pipelineAction.add(globalKey, "uv_" + path, (connection, key, field) -> connection.hIncrBy(key, field, 1));
         } else if (todayUserVisitCnt == 1) {
+            // 某个用户今日首次访问
+
             // 判断是今天的首次访问，更新今天的uv+1
             pipelineAction.add(todayKey, "uv", (connection, key, field) -> connection.hIncrBy(key, field, 1));
             if (RedisClient.hIncr(todayKey, "pv_" + path + "_" + visitIp, 1) == 1) {
@@ -323,7 +332,6 @@ public class SitemapServiceImpl implements SitemapService {
                 pipelineAction.add(globalKey, "uv_" + path, (connection, key, field) -> connection.hIncrBy(key, field, 1));
             }
         }
-
 
         // 更新pv 以及 用户的path访问信息
         // 今天的相关信息 pv

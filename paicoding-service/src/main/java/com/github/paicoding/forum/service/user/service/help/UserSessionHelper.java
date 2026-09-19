@@ -371,6 +371,9 @@ public class UserSessionHelper {
         }
 
         String deviceId = normalizeDeviceId(pendingMeta.getDeviceId(), pendingMeta.getUaHash(), pendingMeta.getUserId() == null ? null : String.valueOf(pendingMeta.getUserId()));
+        // 如果是在同一个浏览器，一个登录管理端，一个登录用户端。
+        // 虽然此时只限制，单账户登录，但是它们的设备ID是一致的（设备ID是保存在浏览器中的），可以认为是值得信任的。所以也会让其登录。
+        // 但如果某个用户登出了，会删除缓存中的相关信息，此时管理页会失去登录态。
         if (deviceSessions.containsKey(deviceId)) {
             return "KNOWN_DEVICE";
         }

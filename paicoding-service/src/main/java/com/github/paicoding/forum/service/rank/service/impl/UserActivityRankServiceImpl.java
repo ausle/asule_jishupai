@@ -99,6 +99,8 @@ public class UserActivityRankServiceImpl implements UserActivityRankService {
         final String todayRankKey = todayRankKey(); //activity_rank_20260917-日榜
         final String monthRankKey = monthRankKey(); //activity_rank_202609 -月榜
         // 2. 幂等：判断之前是否有更新过相关的活跃度信息。activity_rank_120260917
+
+        // 记录某个用户的活跃分
         final String userActionKey = ACTIVITY_SCORE_KEY + userId + DateUtil.format(DateTimeFormatter.ofPattern("yyyyMMdd"), System.currentTimeMillis());
         Integer ans = RedisClient.hGet(userActionKey, field, Integer.class);
 

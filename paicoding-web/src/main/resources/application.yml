@@ -1,5 +1,6 @@
 server:
-  port: 9091
+  # 后端固定端口，前端开发服务器通过 /api/admin 代理到这里
+  port: 8080
   servlet:
     session:
       timeout: 5m # 设置session的有效期为五分钟
