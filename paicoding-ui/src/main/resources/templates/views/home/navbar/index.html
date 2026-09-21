@@ -107,25 +107,59 @@
           });
         }
 
+        var hintTimer = null;
+        var hintRequest = null;
+        var hintRequestSeq = 0;
+
+        function cancelSearchHint() {
+          hintRequestSeq++;
+          if (hintRequest) {
+            hintRequest.abort();
+            hintRequest = null;
+          }
+          searchSubmitBtn.prop("disabled", false).text("搜索");
+        }
+
         function searchByKeyword(text) {
+          text = $.trim(text || "");
+          if (!text) {
+            cancelSearchHint();
+            hideSearchResult();
+            return;
+          }
+
+          var requestSeq = ++hintRequestSeq;
+          if (hintRequest) {
+            hintRequest.abort();
+          }
+
           searchSubmitBtn.prop("disabled", true).text("搜索中");
-          $.ajax({
+          hintRequest = $.ajax({
             url: "/search/api/hint",
             data: {key: text},
             dataType: "json",
             type: "GET",
             success: function(data) {
+              if (requestSeq !== hintRequestSeq) {
+                return;
+              }
               if (!data || !data.status || data.status.code !== 0) {
                 toastr.error(data && data.status ? data.status.msg : "搜索出错啦");
                 return;
               }
               renderSearchResult(text, data.result ? data.result.items : []);
             },
-            error: function() {
+            error: function(xhr, status) {
+              if (status === "abort" || requestSeq !== hintRequestSeq) {
+                return;
+              }
               toastr.error("搜索出错啦");
             },
             complete: function() {
-              searchSubmitBtn.prop("disabled", false).text("搜索");
+              if (requestSeq === hintRequestSeq) {
+                hintRequest = null;
+                searchSubmitBtn.prop("disabled", false).text("搜索");
+              }
             }
           });
         }
@@ -139,10 +173,37 @@
           }, 20);
         });
         cancelBtn.click(() => {
+          if (hintTimer) {
+            clearTimeout(hintTimer);
+            hintTimer = null;
+          }
+          cancelSearchHint();
           searchBtn.removeClass("hidden");
           categoryList.removeClass("hidden invisible w-0").addClass("w-full");
           categorySearchInput.removeClass("w-full").addClass("hidden invisible w-0");
           hideSearchResult();
+        });
+
+        searchInput.on("input", function() {
+          var text = $.trim($(this).val());
+          if (hintTimer) {
+            clearTimeout(hintTimer);
+            hintTimer = null;
+          }
+          if (hintRequest) {
+            cancelSearchHint();
+          }
+
+          if (!text) {
+            hideSearchResult();
+            return;
+          }
+
+          // 防抖，避免每输入一个字符都立即请求后端。
+          hintTimer = setTimeout(function() {
+            searchByKeyword(text);
+            hintTimer = null;
+          }, 300);
         });
 
         searchForm.on('submit', function(event) {
@@ -152,6 +213,10 @@
             hideSearchResult();
             searchInput.focus();
             return;
+          }
+          if (hintTimer) {
+            clearTimeout(hintTimer);
+            hintTimer = null;
           }
           searchInput.val(text);
           searchByKeyword(text);

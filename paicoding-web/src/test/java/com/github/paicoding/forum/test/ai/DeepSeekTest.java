@@ -20,7 +20,7 @@ public class DeepSeekTest {
     public String chat(String prompt, int maxTokens) {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer sk-3eecaxxx");
+        headers.set("Authorization", "Bearer sk-81620dcf3d044fe199f223e4f5a5888e");
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         Map<String, Object> body = new HashMap<>();

@@ -1,6 +1,6 @@
 image:
-  abs-tmp-path: /tmp/storage/
-  web-img-path: /forum/image/
+  abs-tmp-path: D:\coding\project\asule_jishupai\asule_paicoding
+  web-img-path: \docs\test_images\
   tmp-upload-path: /tmp/forum/
   cdn-host:
   oss:

@@ -51,11 +51,11 @@ public class IncSyncArticleToEs {
     }
 
     /**
-     * 每天凌晨 2 点同步前一天更新过的文章。
+     * 每 5 分钟同步前一天更新过的文章。
      *
      * <p>使用前一天的完整时间范围，避免任务刚开始时只同步到当天凌晨的部分数据。</p>
      */
-    @Scheduled(cron = "${elasticsearch.article-inc-sync-cron:0 0 2 * * ?}", zone = TIME_ZONE)
+//    @Scheduled(cron = "${elasticsearch.article-inc-sync-cron:0 */5 * * * ?}", zone = TIME_ZONE)
     public void run() {
         RestHighLevelClient client = restHighLevelClientProvider.getIfAvailable();
         if (client == null) {
