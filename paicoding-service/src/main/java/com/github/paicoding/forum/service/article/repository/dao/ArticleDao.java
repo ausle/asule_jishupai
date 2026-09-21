@@ -34,6 +34,7 @@ import org.springframework.stereotype.Repository;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -385,6 +386,14 @@ public class ArticleDao extends ServiceImpl<ArticleMapper, ArticleDO> {
 
     public ArticleSearchDocumentDTO queryArticleSearchDocument(Long articleId) {
         return articleMapper.queryArticleSearchDocument(articleId);
+    }
+
+    public List<ArticleSearchDocumentDTO> listAllArticleSearchDocuments() {
+        return articleMapper.listAllArticleSearchDocuments();
+    }
+
+    public List<ArticleSearchDocumentDTO> listArticleSearchDocumentsByUpdateTime(Date startTime, Date endTime) {
+        return articleMapper.listArticleSearchDocumentsByUpdateTime(startTime, endTime);
     }
 
     public List<ArticleSearchDocumentDTO> listArticleSearchDocumentsByKeyword(String keyword, boolean includeBody, boolean onlineOnly, Integer size) {

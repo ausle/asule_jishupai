@@ -91,6 +91,7 @@ public class ArticleSearchServiceImpl implements ArticleSearchService {
             return emptyResult();
         }
         List<Map<String, Object>> must = new ArrayList<>();
+        // 拼接title、shortTitle的查询条件
         must.add(articleKeywordQuery(keyword.trim(), EsFieldConstant.ES_FIELD_TITLE, EsFieldConstant.ES_FIELD_SHORT_TITLE));
         List<Map<String, Object>> filters = onlineFilters();
         return search(keyword.trim(), normalizePageSize(limit), false, true,
@@ -255,6 +256,7 @@ public class ArticleSearchServiceImpl implements ArticleSearchService {
     }
 
     private ArticleSearchResult search(String keyword, int bootstrapSize, boolean includeBody, boolean onlineOnly, Map<String, Object> body) {
+        // 是否开启ES
         if (!enabled()) {
             return null;
         }
@@ -262,10 +264,9 @@ public class ArticleSearchServiceImpl implements ArticleSearchService {
             if (!ensureIndex()) {
                 return null;
             }
-            if (isKeywordBootstrapChecked(keyword, bootstrapSize, includeBody, onlineOnly)) {
-                return executeSearch(keyword, body);
-            }
-            return null;
+//            if (isKeywordBootstrapChecked(keyword, bootstrapSize, includeBody, onlineOnly)) {
+            return executeSearch(keyword, body);
+//            }
         } catch (Exception e) {
             log.warn("failed to search article index: {}", indexName(), e);
             return null;
@@ -496,12 +497,14 @@ public class ArticleSearchServiceImpl implements ArticleSearchService {
     private Map<String, Object> articleKeywordQuery(String keyword, String... fields) {
         List<Map<String, Object>> should = new ArrayList<>();
         for (String field : fields) {
+            // exactField把数据库的字段转换为ES中的字段
+            // 指定字段的分数权重值，值越多，排名越靠前。
             should.add(wildcardContains(exactField(field), keyword, fieldBoost(field)));
         }
         Map<String, Object> bool = new LinkedHashMap<>();
-        bool.put("should", should);
-        bool.put("minimum_should_match", 1);
-        return Collections.singletonMap("bool", bool);
+        bool.put("should", should);            // should中的条件，用OR拼接。must，则是AND，都需要满足。
+        bool.put("minimum_should_match", 1);  // // minimum_should_match表示，should中的条件，至少要满足一个条件，数据才能查到。
+        return Collections.singletonMap("bool", bool);  // bool是把多个查询条件组合起来；
     }
 
     private String exactField(String field) {
@@ -550,10 +553,13 @@ public class ArticleSearchServiceImpl implements ArticleSearchService {
     private Map<String, Object> wildcardContains(String field, String value, float boost) {
         Map<String, Object> wildcard = new LinkedHashMap<>();
         wildcard.put("value", "*" + escapeWildcard(value) + "*");
+        // case_insensitive进行通配符匹配时不区分英文字母大小写。
         wildcard.put("case_insensitive", true);
+        // 设置分数权重值，值越多，排名越靠前。
         if (boost > 1.0f) {
             wildcard.put("boost", boost);
         }
+        // wildcard，可以支持模糊匹配。
         return Collections.singletonMap("wildcard", Collections.singletonMap(field, wildcard));
     }
 
@@ -664,10 +670,12 @@ public class ArticleSearchServiceImpl implements ArticleSearchService {
             }
             try {
                 if (!indexExists()) {
+                    // ES索引没建，就去新建。
                     createIndex();
                     markIndexCoverage(false);
                     resetIndexGeneration();
                 } else if (ensureExactFieldsMapping()) {
+                    // 追加mapping字段：titleExact、contentExact
                     markIndexCoverage(false);
                     resetIndexGeneration();
                     keywordBootstrapInFlight.clear();
@@ -710,6 +718,8 @@ public class ArticleSearchServiceImpl implements ArticleSearchService {
     }
 
     private boolean ensureExactFieldsMapping() throws IOException {
+        // GET asule_article_v1/_mapping，
+        // 查询当前索引是否包含指定字段，不包括的话，得新建。
         if (hasExactFieldsMapping()) {
             return false;
         }
@@ -723,6 +733,28 @@ public class ArticleSearchServiceImpl implements ArticleSearchService {
     }
 
     private boolean hasExactFieldsMapping() throws IOException {
+        // 给已经存在es索引，追加mapping。
+        // 新增titleExact、contentExact等字段，它们的类似wildcard，支持模糊搜索。
+        /*
+            类似于：
+            PUT asule_article_v1/_mapping
+                {
+                  "properties": {
+                    "titleExact": {
+                      "type": "wildcard"
+                    },
+                    "shortTitleExact": {
+                      "type": "wildcard"
+                    },
+                    "summaryExact": {
+                      "type": "wildcard"
+                    },
+                    "contentExact": {
+                      "type": "wildcard"
+                    }
+                  }
+                }
+        */
         Request request = new Request("GET", "/" + indexName() + "/_mapping");
         Response response = restClient().performRequest(request);
         Map<String, Object> root = objectMapper.readValue(EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8), MAP_TYPE);

@@ -216,17 +216,19 @@ public class ArticleReadServiceImpl implements ArticleReadService {
         }
         key = key.trim();
         ArticleSearchResult searchResult = articleSearchService.searchHintArticleIds(key, 10);
+        // 已经从ES中查出数据了，只是从中取出文章id，又去查数据库。
+        // ES负责找出哪些文章最匹配，实际的数据还是从mysql中查询。因为ES同步会存在延迟。
         if (searchResult != null && !CollectionUtils.isEmpty(searchResult.getArticleIds())) {
             return buildSimpleArticleList(searchResult.getArticleIds());
         }
-
-        List<ArticleDO> records = articleDao.listSimpleArticlesByBySearchKey(key);
-        List<SimpleArticleDTO> result = records.stream()
-                .map(s -> new SimpleArticleDTO().setId(s.getId()).setAuthorId(s.getUserId()).setTitle(s.getTitle()))
-                .map(this::sanitizeSimpleArticleForDisplay)
-                .collect(Collectors.toList());
-        articleSearchService.syncHintKeyword(key, 10);
-        return result;
+//      数据同步的代码删了
+//        List<ArticleDO> records = articleDao.listSimpleArticlesByBySearchKey(key);
+//        List<SimpleArticleDTO> result = records.stream()
+//                .map(s -> new SimpleArticleDTO().setId(s.getId()).setAuthorId(s.getUserId()).setTitle(s.getTitle()))
+//                .map(this::sanitizeSimpleArticleForDisplay)
+//                .collect(Collectors.toList());
+//        articleSearchService.syncHintKeyword(key, 10);
+        return null;
     }
 
     @Override

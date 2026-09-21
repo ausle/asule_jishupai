@@ -171,6 +171,20 @@
         where a.id = #{articleId}
     </select>
 
+    <select id="listAllArticleSearchDocuments"
+            resultType="com.github.paicoding.forum.service.article.repository.entity.ArticleSearchDocumentDTO">
+        <include refid="articleSearchDocumentSelect"/>
+        order by a.id asc
+    </select>
+
+    <select id="listArticleSearchDocumentsByUpdateTime"
+            resultType="com.github.paicoding.forum.service.article.repository.entity.ArticleSearchDocumentDTO">
+        <include refid="articleSearchDocumentSelect"/>
+        where a.update_time &gt;= #{startTime}
+          and a.update_time &lt; #{endTime}
+        order by a.update_time asc, a.id asc
+    </select>
+
     <select id="listArticleSearchDocumentsByKeyword"
             resultType="com.github.paicoding.forum.service.article.repository.entity.ArticleSearchDocumentDTO">
         <include refid="articleSearchDocumentSelect"/>

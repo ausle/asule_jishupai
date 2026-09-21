@@ -11,6 +11,7 @@ import com.github.paicoding.forum.service.article.repository.entity.ReadCountDO;
 import com.github.paicoding.forum.service.article.repository.params.SearchArticleParams;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -75,6 +76,17 @@ public interface ArticleMapper extends BaseMapper<ArticleDO> {
     List<ArticleAdminDTO> listAdminArticlesByIds(@Param("articleIds") List<Long> articleIds);
 
     ArticleSearchDocumentDTO queryArticleSearchDocument(@Param("articleId") Long articleId);
+
+    /**
+     * 查询全部文章搜索文档，正文取 article_detail 中最新且未删除的版本。
+     */
+    List<ArticleSearchDocumentDTO> listAllArticleSearchDocuments();
+
+    /**
+     * 查询指定更新时间范围内的文章搜索文档，正文取 article_detail 中最新且未删除的版本。
+     */
+    List<ArticleSearchDocumentDTO> listArticleSearchDocumentsByUpdateTime(@Param("startTime") Date startTime,
+                                                                            @Param("endTime") Date endTime);
 
     List<ArticleSearchDocumentDTO> listArticleSearchDocumentsByKeyword(@Param("keyword") String keyword,
                                                                         @Param("includeBody") Boolean includeBody,
