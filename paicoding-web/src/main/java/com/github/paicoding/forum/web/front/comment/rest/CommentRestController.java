@@ -134,11 +134,12 @@ public class CommentRestController {
         if (article == null) {
             return ResVo.fail(StatusEnum.ILLEGAL_ARGUMENTS_MIXED, "文章不存在!");
         }
-
         // 保存评论
         req.setUserId(ReqInfoContext.getReqInfo().getUserId());
+        // 这里会对用户的评论进行转义，如果用户评论的是html标签或者js代码，如果不加处理，就会被当做html或js去执行。
         req.setCommentContent(StringEscapeUtils.escapeHtml3(req.getCommentContent()));
         Long commentId = commentWriteService.saveComment(req);
+        // 返回的是，当前评论的ID
         TopCommentDTO comments = commentReadService.queryTopComments(commentId);
         String content = templateEngineHelper.render("components/comment/comment-highlight", comments);
         HighlightCommentVo vo = new HighlightCommentVo();

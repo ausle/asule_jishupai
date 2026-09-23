@@ -57,6 +57,7 @@ public class ChatHistoryServiceImpl implements ChatHistoryService {
     @Override
     public List<ChatItemVo> listHistory(AISourceEnum source, Long userId, String chatId, Integer size) {
         size = size == null ? 50 : size;
+        // 从redis中读取历史聊天记录：chat.history.deep_seek.5:comment:21_6
         List<ChatItemVo> list = RedisClient.lRange(getChatIdKey(source, userId, chatId), 0, size, ChatItemVo.class);
 
         // 对于特殊的交互机器人，自动补齐相关的提示词

@@ -55,8 +55,9 @@ public class CommentWriteServiceImpl implements CommentWriteService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long saveComment(CommentSaveReq commentSaveReq) {
+        // 敏感词判断
         sensitiveService.contains(commentSaveReq.getCommentContent());
-        // 保存评论
+        // 保存评论，如果用户评论的是文章，没有父评论ID。评论的是文章下的评论，那么就有父评论ID。
         CommentDO comment;
         if (NumUtil.nullOrZero(commentSaveReq.getCommentId())) {
             comment = addComment(commentSaveReq);

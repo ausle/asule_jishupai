@@ -139,6 +139,8 @@ public class UserFootServiceImpl implements UserFootService {
     @Override
     public void saveCommentFoot(CommentDO comment, Long articleAuthor, Long parentCommentAuthor) {
         // 保存文章对应的评论足迹
+
+        // 更新足迹信息， 用户对某个文章进行了评论
         saveOrUpdateUserFoot(DocumentTypeEnum.ARTICLE, comment.getArticleId(), articleAuthor, comment.getUserId(), OperateTypeEnum.COMMENT);
         // 如果是子评论，则找到父评论的记录，然后设置为已评
         if (comment.getParentCommentId() != null && comment.getParentCommentId() != 0) {

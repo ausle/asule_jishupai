@@ -94,7 +94,7 @@ public class AiBotService {
             ReqInfoContext.addReqInfo(reqInfo);
 
             // 机器人，默认使用智谱模型
-            chatFacade.autoChat(AISourceEnum.ZHI_PU_AI, question, vo -> {
+            chatFacade.autoChat(AISourceEnum.DEEP_SEEK, question, vo -> {
                 ChatItemVo item = vo.getRecords().get(0);
                 if (item.getAnswerType() == ChatAnswerTypeEnum.JSON
                         || item.getAnswerType() == ChatAnswerTypeEnum.TEXT

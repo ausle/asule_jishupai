@@ -74,7 +74,7 @@ public class DeepSeekChatServiceImpl extends AbsChatService {
                 }
             }
 
-            // 当连接关闭时的处理
+            // 连接关闭后的回调
             @Override
             public void onClosed(EventSource eventSource) {
                 super.onClosed(eventSource);
@@ -113,8 +113,10 @@ public class DeepSeekChatServiceImpl extends AbsChatService {
             @Override
             public void onError(Throwable throwable, String res) {
                 // 返回异常的场景
+                // 把AI回复的内容，添加到
                 item.appendAnswer("Error:" + (StringUtils.isBlank(res) ? throwable.getMessage() : res))
                         .setAnswerType(ChatAnswerTypeEnum.STREAM_END);
+                // 会保存AI的回复内容到评论表。
                 consumer.accept(AiChatStatEnum.ERROR, response);
                 if (log.isDebugEnabled()) {
                     log.debug("DeepSeek返回异常: {}", lastMessage);
@@ -129,6 +131,7 @@ public class DeepSeekChatServiceImpl extends AbsChatService {
             }
             item.appendAnswer("\n")
                     .setAnswerType(ChatAnswerTypeEnum.STREAM_END);
+            // AI回答结束后，状态为END
             consumer.accept(AiChatStatEnum.END, response);
         });
         // 调用深度寻求流式返回的方法
